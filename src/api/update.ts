@@ -1,6 +1,8 @@
 import { ReleasesAsset, fetchAsset, fetchReleases } from "../services/github";
 import { getOs, type OS } from "../utils/api";
 
+const _target = null;
+
 const router = {
   get: async (req: Request) => {
     const url = new URL(req.url);
@@ -18,12 +20,11 @@ const router = {
     }
     const releases: ReleasesAsset[] = await fetchReleases();
 
-    for (let i = 0; i < releases.length; i++) {
-      const ra = releases[i];
-      if (version && version !== ra.tag_name) {
-        continue;
-      }
-      const found = ra.assets.find((asset) => {
+    const target =
+      (_target && releases.find((r) => r.tag_name === _target)) ?? releases[0];
+
+    if (target.tag_name !== version) {
+      const found = target.assets.find((asset) => {
         const ext = asset.browser_download_url.split(".").pop();
         return (
           (os === "win32" && (ext === "exe" || ext === "nupkg")) ||
@@ -31,12 +32,23 @@ const router = {
           (os === "linux" && (ext === "deb" || ext === "rpm"))
         );
       });
+
       if (found) {
         const downloadLink = await fetchAsset(`${found.id}`);
-        return { downloadLink };
+        return {
+          code: 200,
+          body: {
+            name: target.tag_name,
+            url: downloadLink,
+          },
+        };
       }
     }
-    return {};
+
+    return {
+      code: 204,
+      body: {},
+    };
   },
 };
 

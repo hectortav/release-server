@@ -33,10 +33,10 @@ const router = {
       });
       if (found) {
         const downloadLink = await fetchAsset(`${found.id}`);
-        return { downloadLink };
+        return { code: 200, body: { name: ra.tag_name, url: downloadLink } };
       }
     }
-    return {};
+    return { code: 404, body: {} };
   },
 };
 
